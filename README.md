@@ -24,3 +24,11 @@ If you cloned this repo using **Visual Studio 2022**, you can run the setup scri
 4. Run:
    ```powershell
    ./setup.ps1
+
+   ## 🚀 Running the Setup Script
+
+From the **repo root**, you can run the script using either **Windows PowerShell** or **PowerShell Core**:
+
+### Windows PowerShell (Default in Visual Studio Terminal)
+```powershell
+powershell -ExecutionPolicy Bypass -File .\setup.ps1
