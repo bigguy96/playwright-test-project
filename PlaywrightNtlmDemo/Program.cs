@@ -8,6 +8,7 @@ class Program
         var config = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            .AddUserSecrets<Program>(optional: true)
             .Build();
 
         var defaultEnv = config["PlaywrightSettings:DefaultEnvironment"] ?? "Test";
