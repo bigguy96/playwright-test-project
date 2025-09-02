@@ -47,3 +47,9 @@ From the **repo root**, you can run the script using either **Windows PowerShell
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\setup.ps1
 ```
+
+```powershell
+dotnet user-secrets init
+dotnet user-secrets set "PlaywrightSettings:Environments:Test:DomainWhitelist" "*.my-private-test-domain.com"
+dotnet user-secrets set "PlaywrightSettings:Environments:Test:AppUrl" "https://my-private-test-domain.com/"
+```
