@@ -8,6 +8,7 @@ Write-Host "📦 Updating NuGet packages..."
 dotnet add "$projectDir" package Microsoft.Extensions.Configuration --version "*"
 dotnet add "$projectDir" package Microsoft.Extensions.Configuration.Json --version "*"
 dotnet add "$projectDir" package Microsoft.Extensions.Configuration.FileExtensions --version "*"
+dotnet add "$projectDir" package Microsoft.Extensions.Configuration.UserSecrets --version "*"
 
 # Rebuild
 dotnet restore
