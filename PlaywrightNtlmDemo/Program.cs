@@ -1,9 +1,10 @@
-﻿using Microsoft.Playwright;
-using Microsoft.Extensions.Configuration;
-using PlaywrightNtlmDemo.Tools;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Playwright;
 using PlaywrightNtlmDemo.Helpers;
 
-class Program
+namespace PlaywrightNtlmDemo;
+
+internal class Program
 {
     public static async Task Main(string[] args)
     {
@@ -66,7 +67,7 @@ class Program
 
         // 2. Select a report type
         Console.WriteLine($"📑 Clicking report type selector: {reportTypeSelector}");
-        await page.ClickAsync(reportTypeSelector);
+        await page.ClickAsync(reportTypeSelector ?? string.Empty);
         await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
 
         // 3. Extract wizard ID from URL
@@ -96,7 +97,7 @@ class Program
             // Option B: Fill fields immediately (if you want live testing instead)
             await page.GotoAsync(stepUrl);
             await FormAutoFiller.FillAllFormFieldsAsync(page);
-            await page.ClickAsync(saveButtonSelector);
+            await page.ClickAsync(saveButtonSelector ?? string.Empty);
         }
 
         Console.WriteLine("✅ Wizard flow complete! JSON field schemas saved.");

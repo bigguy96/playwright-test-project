@@ -37,21 +37,16 @@ namespace PlaywrightNtlmDemo.Tools
             doc.LoadHtml(html);
 
             // Extract form fields
-            var nodes = doc.DocumentNode.SelectNodes("//input | //select | //textarea") ?? new HtmlNodeCollection(null);
-            var fields = new List<Dictionary<string, string>>();
-
-            foreach (var node in nodes)
-            {
-                var field = new Dictionary<string, string>
+            var nodes = doc.DocumentNode.SelectNodes("//input | //select | //textarea");
+            var fields = nodes.Select(node => new Dictionary<string, string>
                 {
                     { "tag", node.Name },
                     { "type", node.GetAttributeValue("type", "text") },
                     { "id", node.GetAttributeValue("id", "") },
                     { "name", node.GetAttributeValue("name", "") },
                     { "placeholder", node.GetAttributeValue("placeholder", "") }
-                };
-                fields.Add(field);
-            }
+                })
+                .ToList();
 
             // Save JSON
             var json = JsonSerializer.Serialize(fields, new JsonSerializerOptions { WriteIndented = true });

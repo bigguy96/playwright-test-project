@@ -34,26 +34,28 @@ namespace PlaywrightNtlmDemo.Helpers
             foreach (var checkbox in checkboxes)
             {
                 var isChecked = await checkbox.IsCheckedAsync();
-                if (!isChecked)
-                {
-                    var name = await checkbox.GetAttributeAsync("name") ?? await checkbox.GetAttributeAsync("id") ?? "checkbox";
-                    Console.WriteLine($"☑️ Checking: {name}");
-                    await checkbox.CheckAsync();
-                }
+                
+                if (isChecked) continue;
+                
+                var name = await checkbox.GetAttributeAsync("name") ?? await checkbox.GetAttributeAsync("id") ?? "checkbox";
+                
+                Console.WriteLine($"☑️ Checking: {name}");
+                
+                await checkbox.CheckAsync();
             }
 
             // Handle radio buttons (select first option in each group)
             var radios = await page.QuerySelectorAllAsync("input[type='radio']");
             var groupedRadios = radios.GroupBy(async r => await r.GetAttributeAsync("name")).ToList();
-            foreach (var group in groupedRadios)
+            foreach (var firstRadio in groupedRadios.Select(group => group.FirstOrDefault()))
             {
-                var firstRadio = group.FirstOrDefault();
-                if (firstRadio != null && !await firstRadio.IsCheckedAsync())
-                {
-                    var name = await firstRadio.GetAttributeAsync("name") ?? "radio";
-                    Console.WriteLine($"🔘 Selecting radio option: {name}");
-                    await firstRadio.CheckAsync();
-                }
+                if (firstRadio == null || await firstRadio.IsCheckedAsync()) continue;
+                
+                var name = await firstRadio.GetAttributeAsync("name") ?? "radio";
+                
+                Console.WriteLine($"🔘 Selecting radio option: {name}");
+                
+                await firstRadio.CheckAsync();
             }
 
             // Handle dropdown selects
@@ -61,13 +63,15 @@ namespace PlaywrightNtlmDemo.Helpers
             foreach (var select in selects)
             {
                 var options = await select.QuerySelectorAllAsync("option");
-                if (options.Any())
-                {
-                    var value = await options.Last().GetAttributeAsync("value");
-                    var name = await select.GetAttributeAsync("name") ?? await select.GetAttributeAsync("id") ?? "select";
-                    Console.WriteLine($"⬇️ Selecting last option for: {name}");
-                    await select.SelectOptionAsync(new[] { value });
-                }
+                
+                if (!options.Any()) continue;
+                
+                var value = await options.Last().GetAttributeAsync("value");
+                var name = await select.GetAttributeAsync("name") ?? await select.GetAttributeAsync("id") ?? "select";
+                
+                Console.WriteLine($"⬇️ Selecting last option for: {name}");
+                
+                if (value != null) await select.SelectOptionAsync([value]);
             }
         }
     }
