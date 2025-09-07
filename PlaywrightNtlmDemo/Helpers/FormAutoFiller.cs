@@ -1,77 +1,68 @@
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 using Microsoft.Playwright;
+using WizardSchemaExtractor; // Use the PageSchema and FormField models
 
 namespace PlaywrightNtlmDemo.Helpers
 {
     public static class FormAutoFiller
     {
         /// <summary>
-        /// Fills out all visible form elements on the page with default test data.
-        /// Supports text inputs, textareas, checkboxes, radios, and select dropdowns.
+        /// Fills fields from a JSON schema (PageSchema).
+        /// Skips buttons automatically and logs labels for debugging.
         /// </summary>
-        /// <param name="page">The Playwright IPage instance.</param>
-        public static async Task FillAllFormFieldsAsync(IPage page)
+        public static async Task FillFromSchemaAsync(IPage page, PageSchema schema)
         {
-            // Fill text inputs and textareas
-            var textFields = await page.QuerySelectorAllAsync("input[type='text'], input[type='email'], input[type='number'], textarea");
-            foreach (var field in textFields)
+            foreach (var field in schema.Fields)
             {
-                var name = await field.GetAttributeAsync("name") ?? await field.GetAttributeAsync("id") ?? "field";
-                Console.WriteLine($"📝 Filling text field: {name}");
-                await field.FillAsync("TestValue");
-            }
+                // Skip buttons
+                if (field.Tag.Equals("button", StringComparison.OrdinalIgnoreCase))
+                {
+                    Console.WriteLine($"🔘 Skipping button: {field.Id ?? field.Name}");
+                    continue;
+                }
 
-            // Fill password fields
-            var passwordFields = await page.QuerySelectorAllAsync("input[type='password']");
-            foreach (var field in passwordFields)
-            {
-                var name = await field.GetAttributeAsync("name") ?? await field.GetAttributeAsync("id") ?? "password";
-                Console.WriteLine($"🔒 Filling password field: {name}");
-                await field.FillAsync("P@ssword123");
-            }
+                // Determine selector
+                string selector = !string.IsNullOrEmpty(field.Id)
+                    ? $"#{field.Id}"
+                    : !string.IsNullOrEmpty(field.Name)
+                        ? $"[name='{field.Name}']"
+                        : "";
 
-            // Handle checkboxes
-            var checkboxes = await page.QuerySelectorAllAsync("input[type='checkbox']");
-            foreach (var checkbox in checkboxes)
-            {
-                var isChecked = await checkbox.IsCheckedAsync();
-                
-                if (isChecked) continue;
-                
-                var name = await checkbox.GetAttributeAsync("name") ?? await checkbox.GetAttributeAsync("id") ?? "checkbox";
-                
-                Console.WriteLine($"☑️ Checking: {name}");
-                
-                await checkbox.CheckAsync();
-            }
+                if (string.IsNullOrEmpty(selector))
+                {
+                    Console.WriteLine($"⚠️ Skipping field {field.Index} (no selector found).");
+                    continue;
+                }
 
-            // Handle radio buttons (select first option in each group)
-            var radios = await page.QuerySelectorAllAsync("input[type='radio']");
-            var groupedRadios = radios.GroupBy(async r => await r.GetAttributeAsync("name")).ToList();
-            foreach (var firstRadio in groupedRadios.Select(group => group.FirstOrDefault()))
-            {
-                if (firstRadio == null || await firstRadio.IsCheckedAsync()) continue;
-                
-                var name = await firstRadio.GetAttributeAsync("name") ?? "radio";
-                
-                Console.WriteLine($"🔘 Selecting radio option: {name}");
-                
-                await firstRadio.CheckAsync();
-            }
+                // Log field
+                Console.WriteLine($"#{field.Index} {field.LabelText ?? field.Name} ({field.Tag}) => Filling...");
 
-            // Handle dropdown selects
-            var selects = await page.QuerySelectorAllAsync("select");
-            foreach (var select in selects)
-            {
-                var options = await select.QuerySelectorAllAsync("option");
-                
-                if (!options.Any()) continue;
-                
-                var value = await options.Last().GetAttributeAsync("value");
-                var name = await select.GetAttributeAsync("name") ?? await select.GetAttributeAsync("id") ?? "select";
-                
-                Console.WriteLine($"⬇️ Selecting last option for: {name}");
-                
-                if (value != null) await select.SelectOptionAsync([value]);
+                // Handle field type
+                try
+                {
+                    if (field.Tag.Equals("select", StringComparison.OrdinalIgnoreCase))
+                    {
+                        await page.SelectOptionAsync(selector, new[] { "Option1" }); // Replace with dynamic test data if needed
+                    }
+                    else if (field.Type.Equals("checkbox", StringComparison.OrdinalIgnoreCase))
+                    {
+                        await page.CheckAsync(selector);
+                    }
+                    else if (field.Type.Equals("radio", StringComparison.OrdinalIgnoreCase))
+                    {
+                        await page.CheckAsync(selector);
+                    }
+                    else
+                    {
+                        await page.FillAsync(selector, "TestValue");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"❌ Error filling field {field.Index}: {ex.Message}");
+                }
             }
         }
     }
