@@ -1,3 +1,5 @@
+    namespace WizardSchemaExtractor;
+
     public class FormField
     {
         public int Index { get; set; }

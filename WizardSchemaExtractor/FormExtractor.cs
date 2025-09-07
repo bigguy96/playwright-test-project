@@ -52,12 +52,12 @@ namespace WizardSchemaExtractor
                 ?.OrderBy(n => n.StreamPosition);
 
             var fields = new List<FormField>();
-            int index = 1;
+            var index = 1;
 
             fields.AddRange(from node in nodes
                             let id = node.GetAttributeValue("id", "")
-                            let labelText = !string.IsNullOrEmpty(id) && labelMap.ContainsKey(id)
-                ? labelMap[id]
+                            let labelText = !string.IsNullOrEmpty(id) && labelMap.TryGetValue(id, out var value)
+                ? value
                 : ""
                             select new FormField
                             {

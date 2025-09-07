@@ -27,7 +27,7 @@ namespace WizardSchemaExtractor
             var outputDir = Path.Combine(Directory.GetCurrentDirectory(), "WizardForms");
             Directory.CreateDirectory(outputDir);
 
-            for (int i = 1; i <= totalSteps; i++)
+            for (var i = 1; i <= totalSteps; i++)
             {
                 var stepUrl = $"{dashboardUrl}/../wizard/{wizardId}/step{i}";
                 var outputFile = Path.Combine(outputDir, $"Step{i}.json");

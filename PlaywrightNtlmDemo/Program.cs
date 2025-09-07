@@ -1,14 +1,14 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-using System.Text.Json;
-using System.Threading.Tasks;
+﻿using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Playwright;
 using PlaywrightNtlmDemo.Helpers;
-using WizardSchemaExtractor; // Reference schema classes
+using WizardSchemaExtractor;
 
-class Program
+// Reference schema classes
+
+namespace PlaywrightNtlmDemo;
+
+internal class Program
 {
     public static async Task Main(string[] args)
     {

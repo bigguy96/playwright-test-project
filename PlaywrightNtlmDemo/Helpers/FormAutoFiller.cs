@@ -1,8 +1,7 @@
-using System;
-using System.Linq;
-using System.Threading.Tasks;
 using Microsoft.Playwright;
-using WizardSchemaExtractor; // Use the PageSchema and FormField models
+using WizardSchemaExtractor;
+
+// Use the PageSchema and FormField models
 
 namespace PlaywrightNtlmDemo.Helpers
 {
@@ -44,7 +43,7 @@ namespace PlaywrightNtlmDemo.Helpers
                 {
                     if (field.Tag.Equals("select", StringComparison.OrdinalIgnoreCase))
                     {
-                        await page.SelectOptionAsync(selector, new[] { "Option1" }); // Replace with dynamic test data if needed
+                        await page.SelectOptionAsync(selector, ["Option1"]); // Replace with dynamic test data if needed
                     }
                     else if (field.Type.Equals("checkbox", StringComparison.OrdinalIgnoreCase))
                     {
