@@ -1,13 +1,23 @@
-    namespace WizardSchemaExtractor;
+using System.Text.Json.Serialization;
 
-    public class FormField
-    {
-        public int Index { get; set; }
-        public string Tag { get; set; } = "";
-        public string Type { get; set; } = "";
-        public string Id { get; set; } = "";
-        public string Name { get; set; } = "";
-        public string Placeholder { get; set; } = "";
-        public string LabelText { get; set; } = "";
-        public string? Value { get; set; }
-    }
+namespace WizardSchemaExtractor;
+
+public class FormField
+{
+    [JsonPropertyName("index")]
+    public int Index { get; set; }
+    [JsonPropertyName("tag")]
+    public string Tag { get; set; } = "";
+    [JsonPropertyName("type")]
+    public string Type { get; set; } = "";
+    [JsonPropertyName("id")]
+    public string Id { get; set; } = "";
+    [JsonPropertyName("name")]
+    public string Name { get; set; } = "";
+    [JsonPropertyName("placeholder")]
+    public string Placeholder { get; set; } = "";
+    [JsonPropertyName("labelText")]
+    public string LabelText { get; set; } = "";
+    [JsonPropertyName("value")]
+    public string? Value { get; set; }
+}
