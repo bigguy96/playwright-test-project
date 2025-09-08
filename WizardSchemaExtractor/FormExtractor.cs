@@ -13,7 +13,7 @@ public class FormExtractor
         using var playwright = await Playwright.CreateAsync();
         await using var browser = await playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
         {
-            Headless = true
+            Headless = false
         });
 
         var context = await browser.NewContextAsync(new BrowserNewContextOptions
@@ -36,7 +36,7 @@ public class FormExtractor
         doc.LoadHtml(html);
 
         // Collect labels for easy lookup
-        var labels = doc.DocumentNode.SelectNodes("//label") ?? new HtmlNodeCollection(null);
+        var labels = doc.DocumentNode.SelectNodes("//label").DistinctBy(d => d.GetAttributeValue("for", ""));
         var labelMap = labels
             .Select(l => new
             {
@@ -55,20 +55,21 @@ public class FormExtractor
         var index = 1;
 
         fields.AddRange(from node in nodes
-            let id = node.GetAttributeValue("id", "")
-            let labelText = !string.IsNullOrEmpty(id) && labelMap.TryGetValue(id, out var value)
-                ? value
-                : ""
-            select new FormField
-            {
-                Index = index++,
-                Tag = node.Name,
-                Type = node.GetAttributeValue("type", node.Name == "button" ? "button" : "text"),
-                Id = id,
-                Name = node.GetAttributeValue("name", ""),
-                Placeholder = node.GetAttributeValue("placeholder", ""),
-                LabelText = labelText
-            });
+                        let id = node.GetAttributeValue("id", "")
+                        let labelText = !string.IsNullOrEmpty(id) && labelMap.TryGetValue(id, out var value)
+                            ? value
+                            : ""
+                        select new FormField
+                        {
+                            Index = index++,
+                            Tag = node.Name,
+                            Type = node.GetAttributeValue("type", node.Name == "button" ? "button" : "text"),
+                            Id = id,
+                            Name = node.GetAttributeValue("name", ""),
+                            Placeholder = node.GetAttributeValue("placeholder", ""),
+                            LabelText = labelText,
+                            Value = node.GetAttributeValue("value", "")
+                        });
         var schema = new PageSchema
         {
             PageTitle = title,
@@ -84,7 +85,20 @@ public class FormExtractor
         // Optionally click "Save/Next"
         if (!string.IsNullOrEmpty(saveButtonSelector))
         {
-            await page.ClickAsync(saveButtonSelector);
+            if (url.ToLower().Contains("step6"))
+            {
+                return;
+            }
+
+            if (url.ToLower().Contains("step5"))
+            {
+                await page.GetByText("Save & Continue").ClickAsync();
+            }
+            else
+            {
+                await page.Locator($"button[value='{saveButtonSelector}']").ClickAsync();
+            }
+
             await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
             Console.WriteLine("➡️ Proceeded to next step.");
         }

@@ -9,4 +9,5 @@
         public string Name { get; set; } = "";
         public string Placeholder { get; set; } = "";
         public string LabelText { get; set; } = "";
+        public string? Value { get; set; }
     }
