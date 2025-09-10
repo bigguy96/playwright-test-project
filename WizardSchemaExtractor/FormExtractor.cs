@@ -70,6 +70,8 @@ public class FormExtractor
                             LabelText = labelText,
                             Value = node.GetAttributeValue("value", "")
                         });
+
+        fields = fields.Where(field => field.Type != "hidden" && field.Placeholder != "--" && !string.IsNullOrWhiteSpace(field.Id)).Distinct().ToList();
         var schema = new PageSchema
         {
             PageTitle = title,
