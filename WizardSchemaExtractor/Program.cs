@@ -11,14 +11,13 @@ public class Program
             .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
             .AddUserSecrets<Program>(optional: true)
             .Build();
-
         var appUrl = config["PlaywrightSettings:Environments:Test:AppUrl"];
         var language = config["PlaywrightSettings:Environments:Test:Language"];
         var reportType = config["PlaywrightSettings:Environments:Test:ReportType"];
         var id = config["PlaywrightSettings:Environments:Test:Id"];
         var saveButtonSelector = config["PlaywrightSettings:Wizard:SaveButtonSelector"];
         var totalSteps = int.Parse(config["PlaywrightSettings:Wizard:TotalSteps"] ?? "1");
-        var outputDir = Path.Combine(Directory.GetCurrentDirectory(), "WizardForms");
+        var outputDir = CreateOutPutDirectory();
         
         Directory.CreateDirectory(outputDir);
 
@@ -31,5 +30,24 @@ public class Program
         }
 
         Console.WriteLine("✅ Extraction complete.");
+    }
+
+    private static string CreateOutPutDirectory()
+    {
+        // Get the base directory of the running app (usually /bin/Debug/netX.X/)
+        var baseDirectory = AppContext.BaseDirectory;
+
+        // Traverse up to reach the solution/project root (adjust based on depth)
+        var projectRoot = Path.GetFullPath(Path.Combine(baseDirectory, @"..\..\..\..\"));
+
+        // Define the shared folder path (or just the root)
+        var sharedFolderPath = Path.Combine(projectRoot, "WizardForms");
+
+        // Make sure the directory exists
+        Directory.CreateDirectory(sharedFolderPath);
+
+        Console.WriteLine($"File saved to directory: {sharedFolderPath}");
+
+        return sharedFolderPath;
     }
 }
