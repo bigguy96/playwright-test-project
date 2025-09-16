@@ -4,8 +4,6 @@ using Microsoft.Playwright;
 using PlaywrightNtlmDemo.Helpers;
 using WizardSchemaExtractor;
 
-// Reference schema classes
-
 namespace PlaywrightNtlmDemo;
 
 internal class Program
@@ -17,12 +15,16 @@ internal class Program
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
             .AddUserSecrets<Program>(optional: true)
             .Build();
-
         var defaultEnv = config["PlaywrightSettings:DefaultEnvironment"] ?? "Test";
         var env = args.Length > 0 ? args[0] : defaultEnv;
-
         var domainWhitelist = config[$"PlaywrightSettings:Environments:{env}:DomainWhitelist"];
         var dashboardUrl = config[$"PlaywrightSettings:Environments:{env}:DashboardUrl"];
+        var language = config[$"PlaywrightSettings:Environments:{env}:Language"];
+        var reportType = config[$"PlaywrightSettings:Environments:{env}:ReportType"];
+        var reportTypeSelector = config["PlaywrightSettings:Wizard:ReportTypeSelector"];
+        var saveButtonSelector = config["PlaywrightSettings:Wizard:SaveButtonSelector"];
+        var totalSteps = int.Parse(config["PlaywrightSettings:Wizard:TotalSteps"] ?? "6");
+        var outputDirectory = CreateOutPutDirectory();
 
         if (string.IsNullOrEmpty(domainWhitelist) || string.IsNullOrEmpty(dashboardUrl))
         {
@@ -30,8 +32,7 @@ internal class Program
             return;
         }
 
-        if (env.Equals("Prod", StringComparison.OrdinalIgnoreCase) ||
-            dashboardUrl.Contains("www.myapp.ca", StringComparison.OrdinalIgnoreCase))
+        if (env.Equals("Prod", StringComparison.OrdinalIgnoreCase))
         {
             throw new InvalidOperationException("🚨 Tests cannot run against Production!");
         }
@@ -57,35 +58,95 @@ internal class Program
 
         var page = await context.NewPageAsync();
 
-        // Log network activity
+        // 🔎 Hook into network events
         page.Request += (_, request) => Console.WriteLine($"➡️ {request.Method} {request.Url}");
         page.Response += (_, response) => Console.WriteLine($"⬅️ {response.Status} {response.Url}");
 
+        // 1. Navigate to Dashboard
+        Console.WriteLine("📄 On Dashboard...");
         await page.GotoAsync(dashboardUrl);
-        await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
+        //await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
 
-        // Load schema file (Step1.json as example)
-        var schemaPath = Path.Combine("WizardForms", "Step1.json");
-        if (!File.Exists(schemaPath))
+        //TODO: To fix
+        await page.ClickAsync("text=Create a new PFTR");
+
+        // 2. Select a report type
+        Console.WriteLine($"📑 Clicking report type selector: {reportTypeSelector}");
+        await page.SelectOptionAsync("select#FlightTestType", reportTypeSelector ?? string.Empty);
+        await page.ClickAsync("button[name='NavigationAction']");
+
+        //await page.ClickAsync(reportTypeSelector ?? string.Empty);
+        //await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
+
+        // 3. Extract wizard ID from URL
+        var currentUrl = page.Url;
+        var wizardId = currentUrl.Split('/').LastOrDefault(s => int.TryParse(s, out _));
+        if (wizardId == null)
         {
-            Console.WriteLine($"❌ Schema file not found: {schemaPath}");
+            Console.WriteLine("❌ Could not extract wizard ID from URL!");
             return;
         }
+        Console.WriteLine($"🔍 Wizard started with ID: {wizardId}");
 
-        var schemaJson = await File.ReadAllTextAsync(schemaPath);
-        var schema = JsonSerializer.Deserialize<PageSchema>(schemaJson);
-
-        Console.WriteLine($"📄 Page Title: {schema?.PageTitle}");
-        Console.WriteLine($"🔖 Heading: {schema?.Heading}");
-
-        if (schema != null)
+        // 4. Iterate through steps
+        for (var i = 2; i <= totalSteps; i++)
         {
-            Console.WriteLine("📝 Filling form using schema...");
-            await FormAutoFiller.FillFromSchemaAsync(page, schema);
+            //temporary
+            if (i == 5) return;
+
+            var stepUrl = $"{dashboardUrl}{language}/{reportType}/Step{i}/{wizardId}";
+            var outputFile = Path.Combine(outputDirectory, $"Step{i}.json");
+
+            if (!File.Exists(outputFile))
+            {
+                Console.WriteLine($"❌ Schema file not found: {outputFile}");
+                return;
+            }
+
+            var excludes = await File.ReadAllTextAsync(Path.Combine(outputDirectory, "excludes.txt"));
+            var excluded = excludes.Split([','], StringSplitOptions.RemoveEmptyEntries);
+
+            var schemaJson = await File.ReadAllTextAsync(outputFile);
+            var schema = JsonSerializer.Deserialize<PageSchema>(schemaJson);
+
+            if (schema != null)
+            {
+                //schema.Fields = schema.Fields.Where(field => !excluded.Contains(field.Id)).ToList();
+                schema.Fields = schema.Fields.Where(field => !excluded.Contains(field.Id)).GroupBy(field => field.Id).Select(field => field.First()).ToList();
+
+                Console.WriteLine($"➡️ Navigating to Step {i}: {stepUrl}");
+                Console.WriteLine($"📄 Page Title: {schema?.PageTitle}");
+                Console.WriteLine($"🔖 Heading: {schema?.Heading}");
+
+                // Fill fields immediately (if you want live testing instead)
+                await page.GotoAsync(stepUrl);
+                await FormAutoFiller.FillFromSchemaAsync(page, schema);
+            }
+
+            await page.Locator($"button[value='{saveButtonSelector}']").ClickAsync();
         }
 
         Console.WriteLine("✅ Form completed.");
         Console.WriteLine("Press any key to close...");
         Console.ReadKey();
+    }
+
+    private static string CreateOutPutDirectory()
+    {
+        // Get the base directory of the running app (usually /bin/Debug/netX.X/)
+        var baseDirectory = AppContext.BaseDirectory;
+
+        // Traverse up to reach the solution/project root (adjust based on depth)
+        var projectRoot = Path.GetFullPath(Path.Combine(baseDirectory, @"..\..\..\..\"));
+
+        // Define the shared folder path (or just the root)
+        var sharedFolderPath = Path.Combine(projectRoot, "WizardForms");
+
+        // Make sure the directory exists
+        Directory.CreateDirectory(sharedFolderPath);
+
+        Console.WriteLine($"File saved to directory: {sharedFolderPath}");
+
+        return sharedFolderPath;
     }
 }
