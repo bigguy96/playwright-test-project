@@ -1,5 +1,4 @@
 using Microsoft.Playwright;
-using System.Xml.Linq;
 using WizardSchemaExtractor;
 
 namespace PlaywrightNtlmDemo.Helpers;
@@ -43,29 +42,10 @@ public static class FormAutoFiller
                         {
                             if (field.Id.Equals("AircraftType"))
                             {
-                                //await HandleSelect2DropdownAsync(page, selector, field.Value);
                                 await HandleSelect2DropdownAsync(page);
                             }
                             else
                             {
-                                // Wait for the select element to be visible
-                                //await page.WaitForSelectorAsync(selector, new PageWaitForSelectorOptions
-                                //{
-                                //    State = WaitForSelectorState.Visible,
-                                //    Timeout = 5000
-                                //});
-
-                                //// Get available options
-                                //var options = await page.EvaluateAsync<string[]>(
-                                //    $"() => Array.from(document.querySelector('{selector}').options).map(opt => opt.value)");
-                                //if (options.Length < 2)
-                                //{
-                                //    Console.WriteLine(
-                                //        $"⚠️ Dropdown {field.Id} has too few options ({options.Length}). Skipping.");
-                                //    continue;
-                                //}
-
-                                // Select the first non-placeholder option (index 1) or use field.Value if provided
                                 if (!string.IsNullOrEmpty(field.Value))
                                 {
                                     await page.SelectOptionAsync(selector, new SelectOptionValue { Value = field.Value });
@@ -100,7 +80,7 @@ public static class FormAutoFiller
                     case "date":
                         {
                             // Set the date value (format: YYYY-MM-DD)
-                            const string dateValue = "2025-08-01";
+                            var dateValue= DateTime.Today.AddDays(-10).ToString("yyyy-MM-dd");
                             await page.FillAsync(selector, dateValue);
 
                             // Verify the value was set
@@ -138,56 +118,6 @@ public static class FormAutoFiller
             {
                 Console.WriteLine($"❌ Error filling field {field.Index}: {ex.Message}");
             }
-
-            //try
-            //{
-            //    if (field.Tag.Equals("select", StringComparison.OrdinalIgnoreCase))
-            //    {
-            //        if (field.Id.Equals("AircraftType"))
-            //        {
-            //            await HandleSelect2DropdownAsync(page);
-            //            continue;
-            //        }
-
-            //        await page.SelectOptionAsync(selector, new SelectOptionValue { Index = 1 });
-            //    }
-            //    else if (field.Type.Equals("checkbox", StringComparison.OrdinalIgnoreCase) || field.Type.Equals("radio", StringComparison.OrdinalIgnoreCase))
-            //    {
-            //        var name = $"input[name='{field.Name}'][value='{field.Value}']";
-            //        await ClickRadioByValueAsync(page, name);
-            //    }
-            //    else if (field.Type.Equals("text", StringComparison.OrdinalIgnoreCase) || (field.Type.Equals("textarea", StringComparison.OrdinalIgnoreCase)))
-            //    {
-            //        await FillInputSafelyAsync(page, selector, field.Value ?? "TEST");
-            //    }
-            //    else if (field.Type.Equals("date", StringComparison.OrdinalIgnoreCase))
-            //    {
-            //        // Set the date value (format: YYYY-MM-DD)
-            //        const string dateValue = "2025-08-01";
-            //        await page.FillAsync(selector, dateValue);
-
-            //        // Optional: Verify the value was set
-            //        var setValue = await page.GetAttributeAsync(selector, "value");
-            //        Console.WriteLine($"Date set to: {setValue}");
-            //    }
-            //    else if (field.Tag.Equals("button", StringComparison.OrdinalIgnoreCase))
-            //    {
-            //        await page.Locator(selector).ClickAsync();
-            //        await page.WaitForLoadStateAsync(LoadState.NetworkIdle);
-            //    }
-            //}
-            //catch (TimeoutException ex)
-            //{
-            //    Console.WriteLine($"❌ Timeout exception: {ex.Message}");
-            //}
-            //catch (PlaywrightException ex)
-            //{
-            //    Console.WriteLine($"❌ Playwright click failed: {ex.Message}");
-            //}
-            //catch (Exception ex)
-            //{
-            //    Console.WriteLine($"❌ Error filling field {field.Index}: {ex.Message}");
-            //}
         }
     }
 
@@ -217,30 +147,6 @@ public static class FormAutoFiller
             Console.WriteLine($"Clicked radio button: {selector}");
         }
     }
-
-    //public static async Task ClickRadioByValueAsync(IPage page, string name)
-    //{
-    //    var labelWrapped = page.Locator($"label:has({name})");
-    //    if (await labelWrapped.CountAsync() > 0)
-    //    {
-    //        await labelWrapped.First.ClickAsync();
-    //        return;
-    //    }
-
-    //    var input = page.Locator($"{name}");
-    //    var inputId = await input.GetAttributeAsync("id");
-    //    if (!string.IsNullOrEmpty(inputId))
-    //    {
-    //        var labelFor = page.Locator($"label[for='{inputId}']");
-    //        if (await labelFor.CountAsync() > 0)
-    //        {
-    //            await labelFor.First.ClickAsync();
-    //            return;
-    //        }
-    //    }
-
-    //    await input.ClickAsync();
-    //}
 
     public static async Task HandleSelect2DropdownAsync(IPage page)
     {
@@ -328,100 +234,6 @@ public static class FormAutoFiller
         {
             Console.WriteLine($"Error: {ex.Message}");
         }
-    }
-
-    public static async Task FillInputSafelyAsync(IPage page, string selector, string value, int timeoutMs = 5000)
-    {
-        var locator = page.Locator(selector);
-        //var isVisible = await locator.IsVisibleAsync();
-
-        //if (!isVisible)
-        //{
-        //    return;
-        //}
-
-        //// Wait for input to be attached to DOM
-        //await locator.WaitForAsync(new LocatorWaitForOptions
-        //{
-        //    State = WaitForSelectorState.Attached,
-        //    Timeout = timeoutMs
-        //});
-
-        //// Wait for input to be visible and enabled
-        //await locator.WaitForAsync(new LocatorWaitForOptions
-        //{
-        //    State = WaitForSelectorState.Visible,
-        //    Timeout = timeoutMs
-        //});
-
-        //// Optionally double-check the bounding box (visible on screen)
-        //var box = await locator.BoundingBoxAsync();
-        //if (box == null || box.Width == 0 || box.Height == 0)
-        //{
-        //    throw new Exception($"Element '{selector}' is not visible (bounding box is empty)");
-        //}
-
-        // Finally, fill the input
-        await locator.FillAsync(value);
-    }
-
-
-    private static async Task HandleSelect2DropdownAsync(IPage page, string selectSelector, string? value = null)
-    {
-        // Wait for the Select2 container to be visible
-        var select2Container = $"{selectSelector} + .select2-container";
-        await page.WaitForSelectorAsync(select2Container, new PageWaitForSelectorOptions
-        {
-            State = WaitForSelectorState.Visible,
-            Timeout = 5000
-        });
-
-        // Click the Select2 dropdown to open it
-        await page.Locator($"{select2Container} .select2-selection").ClickAsync();
-        Console.WriteLine($"Clicked Select2 dropdown for {selectSelector}");
-
-        // Wait for the dropdown options to appear
-        var optionList = ".select2-results__options li.select2-results__option";
-        await page.WaitForSelectorAsync(optionList, new PageWaitForSelectorOptions
-        {
-            State = WaitForSelectorState.Visible,
-            Timeout = 5000
-        });
-
-        // Get available options
-        var options = await page.EvaluateAsync<string[]>(
-            $"() => Array.from(document.querySelectorAll('.select2-results__options li.select2-results__option')).map(opt => opt.textContent.trim())");
-
-        if (options.Length == 0)
-        {
-            Console.WriteLine($"⚠️ No options found for Select2 dropdown {selectSelector}. Skipping.");
-            return;
-        }
-
-        // Select the option (use value if provided, else default to first option)
-        var optionToSelect = !string.IsNullOrEmpty(value)
-            ? value
-            : options[0];
-        var optionSelector = $".select2-results__option:not(.select2-results__option--disabled)[text()='{optionToSelect}']";
-        var optionElement = page.Locator(optionSelector);
-
-        if (await optionElement.CountAsync() == 0)
-        {
-            Console.WriteLine($"⚠️ Option '{optionToSelect}' not found in Select2 dropdown {selectSelector}. Selecting first available option.");
-            optionSelector = ".select2-results__option:not(.select2-results__option--disabled)";
-            await page.Locator(optionSelector).First.ClickAsync();
-        }
-        else
-        {
-            await optionElement.ClickAsync();
-        }
-
-        Console.WriteLine($"Selected option '{optionToSelect}' for Select2 dropdown {selectSelector}");
-
-        // Verify the selection
-        var selectedValue = await page.EvaluateAsync<string>(
-            $"() => document.querySelector('{selectSelector}').value");
-        Console.WriteLine($"Verified selected value: {selectedValue}");
     }
 
     private static async Task FillInputSafelyAsync(IPage page, string selector, string value)
