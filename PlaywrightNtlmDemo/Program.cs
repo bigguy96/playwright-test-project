@@ -65,7 +65,6 @@ internal class Program
         // 1. Navigate to Dashboard
         Console.WriteLine("📄 On Dashboard...");
         await page.GotoAsync(dashboardUrl);
-        //await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
 
         //TODO: To fix
         await page.ClickAsync("text=Create a new PFTR");
@@ -74,9 +73,6 @@ internal class Program
         Console.WriteLine($"📑 Clicking report type selector: {reportTypeSelector}");
         await page.SelectOptionAsync("select#FlightTestType", reportTypeSelector ?? string.Empty);
         await page.ClickAsync("button[name='NavigationAction']");
-
-        //await page.ClickAsync(reportTypeSelector ?? string.Empty);
-        //await page.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
 
         // 3. Extract wizard ID from URL
         var currentUrl = page.Url;
@@ -91,9 +87,6 @@ internal class Program
         // 4. Iterate through steps
         for (var i = 2; i <= totalSteps; i++)
         {
-            //temporary
-            if (i == 5) return;
-
             var stepUrl = $"{dashboardUrl}{language}/{reportType}/Step{i}/{wizardId}";
             var outputFile = Path.Combine(outputDirectory, $"Step{i}.json");
 
@@ -111,7 +104,6 @@ internal class Program
 
             if (schema != null)
             {
-                //schema.Fields = schema.Fields.Where(field => !excluded.Contains(field.Id)).ToList();
                 schema.Fields = schema.Fields.Where(field => !excluded.Contains(field.Id)).GroupBy(field => field.Id).Select(field => field.First()).ToList();
 
                 Console.WriteLine($"➡️ Navigating to Step {i}: {stepUrl}");
@@ -123,7 +115,14 @@ internal class Program
                 await FormAutoFiller.FillFromSchemaAsync(page, schema);
             }
 
-            await page.Locator($"button[value='{saveButtonSelector}']").ClickAsync();
+            if (i != 5)
+            {
+                await page.Locator($"button[value='{saveButtonSelector}']").ClickAsync();
+            }
+            else
+            {
+                await page.ClickAsync("text=Save & Continue");
+            }
         }
 
         Console.WriteLine("✅ Form completed.");
