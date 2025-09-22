@@ -55,7 +55,6 @@ public static class FormAutoFiller
                                     await page.SelectOptionAsync(selector, new SelectOptionValue { Index = 1 });
                                 }
 
-
                                 Console.WriteLine($"Selected value '{field.Value}' for dropdown {field.Id}");
                             }
                         }
