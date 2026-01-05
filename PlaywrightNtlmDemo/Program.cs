@@ -1,8 +1,9 @@
 ﻿using System.Text.Json;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.Playwright;
 using PlaywrightNtlmDemo.Helpers;
-using WizardSchemaExtractor;
+using PlaywrightNtlmDemo.Schemas;
 
 namespace PlaywrightNtlmDemo;
 
@@ -10,142 +11,115 @@ internal class Program
 {
     public static async Task Main(string[] args)
     {
+        using var loggerFactory = LoggerFactory.Create(b =>
+        {
+            b.AddSimpleConsole(o => { o.SingleLine = true; o.TimestampFormat = "HH:mm:ss "; });
+            b.SetMinimumLevel(LogLevel.Information);
+        });
+        var log = loggerFactory.CreateLogger("Playwright");
         var config = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
             .AddUserSecrets<Program>(optional: true)
             .Build();
-        var defaultEnv = config["PlaywrightSettings:DefaultEnvironment"] ?? "Test";
-        var env = args.Length > 0 ? args[0] : defaultEnv;
-        var domainWhitelist = config[$"PlaywrightSettings:Environments:{env}:DomainWhitelist"];
-        var dashboardUrl = config[$"PlaywrightSettings:Environments:{env}:DashboardUrl"];
-        var language = config[$"PlaywrightSettings:Environments:{env}:Language"];
-        var reportType = config[$"PlaywrightSettings:Environments:{env}:ReportType"];
-        var reportTypeSelector = config["PlaywrightSettings:Wizard:ReportTypeSelector"];
-        var saveButtonSelector = config["PlaywrightSettings:Wizard:SaveButtonSelector"];
-        var totalSteps = int.Parse(config["PlaywrightSettings:Wizard:TotalSteps"] ?? "6");
-        var outputDirectory = CreateOutPutDirectory();
+        var whitelist = config["PlaywrightSettings:DomainWhitelist"];
+        var dashboardUrl = config["PlaywrightSettings:DashboardUrl"] ?? "dashboard";
+        var language = config["PlaywrightSettings:Language"];
+        var reportType = config["PlaywrightSettings:ReportType"];
+        var reportTypeSelector = config["PlaywrightSettings:ReportTypeSelector"] ?? "selector";
+        var saveButtonSelector = config["PlaywrightSettings:SaveButtonSelector"];
+        var totalSteps = int.Parse(config["PlaywrightSettings:TotalSteps"] ?? "6");
+        var newReport = config["PlaywrightSettings:NewReport"] ?? "report";
+        var flightTestType = config["PlaywrightSettings:FlightTestType"] ?? "test type";
+        var createReport = config["PlaywrightSettings:CreateReport"] ?? "create report";
+        var agreement = config["PlaywrightSettings:Agreement"] ?? "I agree to these terms and conditions";
+        var outputDirectory = PathHelper.ResolveWizardFormsFolder();
 
-        if (string.IsNullOrEmpty(domainWhitelist) || string.IsNullOrEmpty(dashboardUrl))
-        {
-            Console.WriteLine($"❌ Environment '{env}' not found in configuration.");
-            return;
-        }
-
-        if (env.Equals("Prod", StringComparison.OrdinalIgnoreCase))
-        {
-            throw new InvalidOperationException("🚨 Tests cannot run against Production!");
-        }
-
-        Console.WriteLine($"✅ Running tests against environment: {env}");
-        Console.WriteLine($"➡️ URL: {dashboardUrl}");
-
+        // Initiate Playwright
         using var playwright = await Playwright.CreateAsync();
         var browser = await playwright.Chromium.LaunchAsync(new BrowserTypeLaunchOptions
         {
             Headless = false,
             Args =
             [
-                $"--auth-server-whitelist=\"{domainWhitelist}\"",
-                $"--auth-negotiate-delegate-whitelist=\"{domainWhitelist}\""
+                $"--auth-server-whitelist={whitelist}",
+                $"--auth-negotiate-delegate-whitelist={whitelist}"
             ]
         });
 
-        var context = await browser.NewContextAsync(new BrowserNewContextOptions
-        {
-            IgnoreHTTPSErrors = true
-        });
-
+        // Create page
+        var context = await browser.NewContextAsync(new BrowserNewContextOptions { IgnoreHTTPSErrors = true });
         var page = await context.NewPageAsync();
 
-        // 🔎 Hook into network events
-        page.Request += (_, request) => Console.WriteLine($"➡️ {request.Method} {request.Url}");
-        page.Response += (_, response) => Console.WriteLine($"⬅️ {response.Status} {response.Url}");
+        page.Request += (_, r) => log.LogInformation("➡️ {m} {u}", r.Method, r.Url);
+        page.Response += (_, r) => log.LogInformation("⬅️ {s} {u}", r.Status, r.Url);
 
-        // 1. Navigate to Dashboard
-        Console.WriteLine("📄 On Dashboard...");
+        // 1. Navigate to dashboard
         await page.GotoAsync(dashboardUrl);
-
-        //TODO: To fix
-        await page.ClickAsync("text=Create a new PFTR");
+        await page.ClickAsync(newReport);
+        
+        // 1.1 Accept terms and conditions
+        await page.ClickAsync(agreement);
 
         // 2. Select a report type
-        Console.WriteLine($"📑 Clicking report type selector: {reportTypeSelector}");
-        await page.SelectOptionAsync("select#FlightTestType", reportTypeSelector ?? string.Empty);
-        await page.ClickAsync("button[name='NavigationAction']");
+        Console.WriteLine($"Clicking report type selector: {reportTypeSelector}");
+        await page.SelectOptionAsync(flightTestType, reportTypeSelector);
+        await page.ClickAsync(createReport);
 
         // 3. Extract wizard ID from URL
         var currentUrl = page.Url;
         var wizardId = currentUrl.Split('/').LastOrDefault(s => int.TryParse(s, out _));
         if (wizardId == null)
         {
-            Console.WriteLine("❌ Could not extract wizard ID from URL!");
+            Console.WriteLine("Could not extract wizard ID from URL!");
             return;
         }
-        Console.WriteLine($"🔍 Wizard started with ID: {wizardId}");
+        Console.WriteLine($"Wizard started with ID: {wizardId}");
 
         // 4. Iterate through steps
-        for (var i = 2; i <= totalSteps; i++)
+        for (var step = 2; step <= totalSteps; step++)
         {
-            var stepUrl = $"{dashboardUrl}{language}/{reportType}/Step{i}/{wizardId}";
-            var outputFile = Path.Combine(outputDirectory, $"Step{i}.json");
+            var stepUrl = $"{dashboardUrl}/{language}/{reportType}/Step{step}/{wizardId}";
+            var outputFile = Path.Combine(outputDirectory, $"Step{step}.json");
 
-            if (!File.Exists(outputFile))
+            if (File.Exists(outputFile))
             {
-                Console.WriteLine($"❌ Schema file not found: {outputFile}");
-                return;
-            }
+                // Get the step details and deserialize
+                var json = await File.ReadAllTextAsync(outputFile);
+                var pageSchema = JsonSerializer.Deserialize<PageSchema>(json);
 
-            var excludes = await File.ReadAllTextAsync(Path.Combine(outputDirectory, "excludes.txt"));
-            var excluded = excludes.Split([','], StringSplitOptions.RemoveEmptyEntries);
+                if (pageSchema is not null)
+                {
+                    // Go to step and fill the form
+                    await page.GotoAsync(stepUrl);
+                    await FormAutoFiller.FillFromSchemaAsync(page, pageSchema, log);
 
-            var schemaJson = await File.ReadAllTextAsync(outputFile);
-            var schema = JsonSerializer.Deserialize<PageSchema>(schemaJson);
-
-            if (schema != null)
-            {
-                schema.Fields = schema.Fields.Where(field => !excluded.Contains(field.Id)).GroupBy(field => field.Id).Select(field => field.First()).ToList();
-
-                Console.WriteLine($"➡️ Navigating to Step {i}: {stepUrl}");
-                Console.WriteLine($"📄 Page Title: {schema?.PageTitle}");
-                Console.WriteLine($"🔖 Heading: {schema?.Heading}");
-
-                // Fill fields immediately (if you want live testing instead)
-                await page.GotoAsync(stepUrl);
-                await FormAutoFiller.FillFromSchemaAsync(page, schema);
-            }
-
-            if (i != 5)
-            {
-                await page.Locator($"button[value='{saveButtonSelector}']").ClickAsync();
+                    if (step == 5)
+                    {
+                        await page.ClickAsync("text=Save & Continue");
+                    }
+                    else
+                    {
+                        await page.Locator($"button[value='{saveButtonSelector}']").ClickAsync();
+                    }
+                }
+                else
+                {
+                    log.LogWarning("Page schema is null, continuing");
+                    return;
+                }
             }
             else
             {
-                await page.ClickAsync("text=Save & Continue");
+                log.LogWarning("Schema not found at {path}. Run the extractor to generate it.", outputFile);
+                return;
             }
         }
 
-        Console.WriteLine("✅ Form completed.");
-        Console.WriteLine("Press any key to close...");
+        // 5. Return to the dashboard
+        await page.ClickAsync("text=Close");
+
+        log.LogInformation("Done. Press any key to close...");
         Console.ReadKey();
-    }
-
-    private static string CreateOutPutDirectory()
-    {
-        // Get the base directory of the running app (usually /bin/Debug/netX.X/)
-        var baseDirectory = AppContext.BaseDirectory;
-
-        // Traverse up to reach the solution/project root (adjust based on depth)
-        var projectRoot = Path.GetFullPath(Path.Combine(baseDirectory, @"..\..\..\..\"));
-
-        // Define the shared folder path (or just the root)
-        var sharedFolderPath = Path.Combine(projectRoot, "WizardForms");
-
-        // Make sure the directory exists
-        Directory.CreateDirectory(sharedFolderPath);
-
-        Console.WriteLine($"File saved to directory: {sharedFolderPath}");
-
-        return sharedFolderPath;
     }
 }

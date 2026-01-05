@@ -1,0 +1,8 @@
+﻿namespace PlaywrightNtlmDemo.Schemas;
+
+internal class PageSchema
+{
+    public string PageTitle { get; set; } = "";
+    public string Heading { get; set; } = "";
+    public List<FormField> Fields { get; set; } = [];
+}

@@ -1,0 +1,126 @@
+{
+  "PageTitle": "Pilot candidate information- Canada.ca",
+  "Heading": "Step 2. Pilot candidate information",
+  "Fields": [
+    {
+      "Index": 1,
+      "Tag": "input",
+      "Type": "text",
+      "Id": "LicenseNumber",
+      "Name": "LicenseNumber",
+      "LabelText": "Licence file number",
+      "IsSelect2": false,
+      "IsAjax": false,
+      "Exclude": false,
+      "Value": "000010"
+    },
+    {
+      "Index": 2,
+      "Tag": "button",
+      "Type": "button",
+      "Id": "pilotSearch",
+      "Name": "",
+      "LabelText": "",
+      "IsSelect2": false,
+      "IsAjax": true,
+      "Exclude": false,
+      "Value": ""
+    },
+    {
+      "Index": 3,
+      "Tag": "button",
+      "Type": "button",
+      "Id": "Yes_ChangeAddress",
+      "Name": "",
+      "LabelText": "",
+      "IsSelect2": false,
+      "IsAjax": false,
+      "Exclude": false,
+      "Value": ""
+    },
+    {
+      "Index": 4,
+      "Tag": "input",
+      "Type": "radio",
+      "Id": "TrainingComplete",
+      "Name": "TrainingComplete",
+      "LabelText": "",
+      "IsSelect2": false,
+      "IsAjax": false,
+      "Exclude": false,
+      "Value": "True"
+    },
+    {
+      "Index": 6,
+      "Tag": "select",
+      "Type": "text",
+      "Id": "PresentInstrumentGroupId",
+      "Name": "PresentInstrumentGroupId",
+      "LabelText": "Present instrument group",
+      "IsSelect2": false,
+      "IsAjax": false,
+      "Exclude": false,
+      "Value": ""
+    },
+    {
+      "Index": 7,
+      "Tag": "button",
+      "Type": "button",
+      "Id": "wb-auto-2",
+      "Name": "",
+      "LabelText": "",
+      "IsSelect2": false,
+      "IsAjax": false,
+      "Exclude": false,
+      "Value": ""
+    },
+    {
+      "Index": 8,
+      "Tag": "input",
+      "Type": "text",
+      "Id": "OperatorNumber",
+      "Name": "OperatorNumber",
+      "LabelText": "Operator",
+      "IsSelect2": false,
+      "IsAjax": false,
+      "Exclude": false,
+      "Value": "999998"
+    },
+    {
+      "Index": 9,
+      "Tag": "button",
+      "Type": "button",
+      "Id": "operatorSearch",
+      "Name": "",
+      "LabelText": "",
+      "IsSelect2": false,
+      "IsAjax": true,
+      "Exclude": false,
+      "Value": ""
+    },
+    {
+      "Index": 10,
+      "Tag": "input",
+      "Type": "number",
+      "Id": "TrainingUnitNumber",
+      "Name": "TrainingUnitNumber",
+      "LabelText": "Training Unit Code",
+      "IsSelect2": false,
+      "IsAjax": false,
+      "Exclude": false,
+      "Value": ""
+    },
+    {
+      "Index": 11,
+      "Tag": "input",
+      "Type": "text",
+      "Id": "TrainingUnitName",
+      "Name": "TrainingUnitName",
+      "LabelText": "Training Unit Name",
+      "IsSelect2": false,
+      "IsAjax": false,
+      "Exclude": false,
+      "Value": ""
+    }
+  ]
+}
