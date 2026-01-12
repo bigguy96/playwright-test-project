@@ -1,0 +1,18 @@
+{
+  "PageTitle": "Summary and submit- Canada.ca",
+  "Heading": "Step 6. Summary and submit",
+  "Fields": [
+    {
+      "Index": 1,
+      "Tag": "input",
+      "Type": "checkbox",
+      "Id": "Acknowledged",
+      "Name": "Acknowledged",
+      "LabelText": "I confirm that this information in this report is accurate and reflects my observation of events during the flight test.",
+      "IsSelect2": false,
+      "IsAjax": false,
+      "Exclude": false,
+      "Value": "true"
+    }
+  ]
+}
